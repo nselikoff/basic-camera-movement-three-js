@@ -4,27 +4,48 @@
     <style>
       body { margin: 0; }
       canvas { width: 100%; height: 100% }
-      #info {
+      #info, #side, #top {
         position: absolute;
-        top: 10px;
-        left: 10px;
+        bottom: 50%;
+        left: 0%;
+        padding-top: 10px;
+        padding-left: 10px;
+        padding-bottom: 10px;
         width: 100%;
         text-align: left;
         display:block;
         color: #ffffff;
         font-family: sans-serif;
       }
+      #side, #top {
+        top: 50%;
+        font-style: italic;
+      }
+      #top {
+        left: 50%;
+      }
       #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
     </style>
   </head>
   <body>
+    <a href="https://github.com/nselikoff/basic-camera-movement-three-js"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://camo.githubusercontent.com/c6286ade715e9bea433b4705870de482a654f78a/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f77686974655f6666666666662e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_white_ffffff.png"></a>    
     <div id="info">
-      <strong>Basic Camera Movement:</strong> choose one --><br/>
-      Let's be creative with our virtual cameras and learn from film :)
+      <strong>Basic Camera Movement in <a href="http://threejs.org" target="_blank">three.js</a></strong><br/>
+      <small>Switch between the basic camera movements with the dropdown above right.</small>
     </div>
+    <div id="side">
+      Side View
+    </div>
+    <div id="top">
+      Top View
+    </div>
+    <div id="container"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+    <script src="js/Detector.js"></script>
     <script>
+
+      if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
       var params = {
         movement: 'tilt'
@@ -87,7 +108,8 @@
 
       var renderer = new THREE.WebGLRenderer( { antialias: true } );
       renderer.setSize( window.innerWidth, window.innerHeight );
-      document.body.appendChild( renderer.domElement );
+      var container = document.getElementById( 'container' );
+      container.appendChild( renderer.domElement );
 
       var clock = new THREE.Clock();
 

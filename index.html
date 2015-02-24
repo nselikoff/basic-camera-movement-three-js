@@ -1,0 +1,235 @@
+<html>
+  <head>
+    <title>Basic Camera Movement : three.js</title>
+    <style>
+      body { margin: 0; }
+      canvas { width: 100%; height: 100% }
+      #info {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 100%;
+        text-align: left;
+        display:block;
+        color: #ffffff;
+        font-family: sans-serif;
+      }
+      #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+    </style>
+  </head>
+  <body>
+    <div id="info">
+      <strong>Basic Camera Movement:</strong> choose one --><br/>
+      Let's be creative with our virtual cameras and learn from film :)
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+    <script>
+
+      var params = {
+        movement: 'tilt'
+      };
+
+      var gui = new dat.GUI();
+      gui.add( params, 'movement', { 
+        'Tilt': 'tilt', 
+        'Pan': 'pan',
+        'Zoom': 'zoom',
+        'Pedestal': 'pedestal',
+        'Dolly': 'dolly',
+        'Truck / Track': 'truck'
+      } );
+      gui.open();
+
+      var windowWidth  = window.innerWidth;
+      var windowHeight = window.innerHeight;
+
+      var views = [
+        {
+          left: 0,
+          bottom: 0,
+          width: 0.5,
+          height: 0.5,
+          eye: [ 0, 100, 200 ],
+          direction: [ 0, 1, 0 ]
+        },
+        { 
+          left: 0.5,
+          bottom: 0,
+          width: 0.5,
+          height: 0.5,
+          eye: [ 0, 0, 200 ],
+          direction: [ -1, 0, 0 ]
+        }
+      ];
+
+      for ( var ii =  0; ii < views.length; ++ii ) {
+        var view = views[ii];
+        orthoCam = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -500, 10000 );
+        view.orthoCam = orthoCam;
+      }
+
+      var scene = new THREE.Scene();
+      scene.fog = new THREE.Fog( 0x333333, 500, 3000 );
+
+      var light = new THREE.DirectionalLight( 0xffffff, 1 );
+      light.position.set( 1, 1, 0.5 ).normalize();
+      scene.add( light );
+
+      var startFov = 30.0;
+      var startPosition = new THREE.Vector3( 0, 20, 500 );
+      var startRotation = new THREE.Vector3( 0, 0, 0 );
+
+      var camera = new THREE.PerspectiveCamera( startFov, window.innerWidth/window.innerHeight, 0.1, 10000 );
+      
+      var cameraHelper = new THREE.CameraHelper( camera );
+      scene.add( cameraHelper );
+
+      var renderer = new THREE.WebGLRenderer( { antialias: true } );
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      document.body.appendChild( renderer.domElement );
+
+      var clock = new THREE.Clock();
+
+      //
+
+      var geometry = new THREE.BoxGeometry( 20, 20, 20 );
+
+      for ( var i = 0; i < 500; i ++ ) {
+
+        var color = new THREE.Color();
+        color.setHSL( 0.55, 0.5, Math.random() * 0.5 + 0.5 );
+        var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: color } ) );
+
+        object.scale.x = Math.random() + 0.5;
+        object.scale.y = (Math.random() + 0.5) * 6.0;
+        object.scale.z = Math.random() + 0.5;
+
+        object.position.x = Math.random() * 400 - 200;
+        object.position.x += object.position.x > 0 ? 40 : -40;
+        object.position.y = 10 * object.scale.y;
+        object.position.z = Math.random() * 3000 - 2600;
+
+        scene.add( object );
+
+      }
+
+      // GROUND
+
+      var geometry = new THREE.PlaneBufferGeometry( 100, 100 );
+      var planeMaterial = new THREE.MeshBasicMaterial( { color: 0x222222 } );
+      planeMaterial.ambient = planeMaterial.color;
+
+      var ground = new THREE.Mesh( geometry, planeMaterial );
+
+      ground.position.set( 0, 0, 0 );
+      ground.rotation.x = - Math.PI / 2;
+      ground.scale.set( 100, 100, 100 );
+
+      ground.castShadow = false;
+      ground.receiveShadow = true;
+
+      scene.add( ground );
+
+      //
+
+      window.addEventListener( 'resize', onWindowResize, false );
+
+      function onWindowResize() {
+
+        windowWidth  = window.innerWidth;
+        windowHeight = window.innerHeight;
+
+        renderer.setSize( windowWidth, windowHeight );
+
+      }
+
+      //
+
+      var render = function () {
+
+        var time = clock.getElapsedTime() * 0.5;
+
+        requestAnimationFrame( render );
+
+        //
+
+        camera.position.set( startPosition.x, startPosition.y, startPosition.z );
+        camera.rotation.set( startRotation.x, startRotation.y, startRotation.z );
+        camera.fov = startFov;
+
+
+        if ( params.movement == 'tilt' )
+          camera.rotation.x = startRotation.x + Math.sin( time * 2.0 ) * 0.1 + 0.1;
+
+        else if ( params.movement == 'pan' )
+          camera.rotation.y = startRotation.y + Math.sin( time ) * 0.2;
+
+        else if ( params.movement == 'zoom' )
+          camera.fov = startFov + Math.sin( time ) * 10.0;
+
+        else if ( params.movement == 'pedestal' )
+          camera.position.y = startPosition.y + Math.cos( time * 2.0 ) * 20.0 + 10.0;
+
+        else if ( params.movement == 'dolly' )
+          camera.position.z = startPosition.z + Math.cos( time ) * 100.0;
+        
+        else if ( params.movement == 'truck' )
+          camera.position.x = startPosition.x + Math.sin( time ) * 50.0;
+
+        var left   = Math.floor( windowWidth  * 0.0 );
+        var bottom = Math.floor( windowHeight * 0.5 );
+        var width  = Math.floor( windowWidth  * 1.0 );
+        var height = Math.floor( windowHeight * 0.5 );
+        renderer.setViewport( left, bottom, width, height );
+        renderer.setScissor( left, bottom, width, height );
+        renderer.enableScissorTest ( true );
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        cameraHelper.update();
+        cameraHelper.visible = false;
+
+        renderer.render(scene, camera);
+
+        //
+
+        cameraHelper.visible = true;
+        for ( var ii = 0; ii < views.length; ++ii ) {
+
+          view = views[ii];
+          orthoCam = view.orthoCam;
+
+          orthoCam.left = windowWidth / - 2;
+          orthoCam.right = windowWidth / 2;
+          orthoCam.top = windowHeight / 2;
+          orthoCam.bottom = windowHeight / - 2;
+          orthoCam.position.x = view.eye[ 0 ];
+          orthoCam.position.y = view.eye[ 1 ];
+          orthoCam.position.z = view.eye[ 2 ];
+          orthoCam.rotation.x = view.direction[ 0 ] * Math.PI * 0.5;
+          orthoCam.rotation.y = view.direction[ 1 ] * Math.PI * 0.5;
+          orthoCam.rotation.z = view.direction[ 2 ] * Math.PI * 0.5;
+          // orthoCam.lookAt( scene.position );
+          orthoCam.updateProjectionMatrix();
+
+          var left   = Math.floor( windowWidth  * view.left );
+          var bottom = Math.floor( windowHeight * view.bottom );
+          var width  = Math.floor( windowWidth  * view.width );
+          var height = Math.floor( windowHeight * view.height );
+          renderer.setViewport( left, bottom, width, height );
+          renderer.setScissor( left, bottom, width, height );
+          renderer.enableScissorTest ( true );
+          // renderer.setClearColor( view.background );
+
+          renderer.render( scene, orthoCam );
+        }
+
+      };
+
+      render();
+
+    </script>
+  </body>
+</html>
